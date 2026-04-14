@@ -3,7 +3,7 @@ import logging
 import datetime
 from spade.agent import Agent
 from spade.behaviour import PeriodicBehaviour
-from AlphaBot2 import AlphaBot2
+from .AlphaBot2 import AlphaBot2
 
 
 # Configure logging
@@ -28,7 +28,7 @@ class RobotAgent(Agent):
             logger.debug("[Behaviour] Reading IR sensor")
             right: bool = self.bot.getIRSensorRight()
             left: bool = self.bot.getIRSensorLeft()
-            logger.info("f[Behaviour] RIR {right=} {left=}")
+            logger.info(f"[Behaviour] RIR {right=} {left=}")
 
             if right and left:
                 logger.debug("[Agent] Stopping")
@@ -49,12 +49,3 @@ class RobotAgent(Agent):
         sensor_behavior = self.IRSensorReader(period=1, start_at=start_at)
         
         self.add_behaviour(sensor_behavior)
-
-"""
-Hi my name's Katrina
-And my name is Loraine
-I'm Anthony
-I'm Debbie
-And my name is Abbie
-*music*
-"""
