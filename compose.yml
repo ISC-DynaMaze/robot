@@ -18,3 +18,5 @@ services:
       PYTHONUNBUFFERED: 1
     volumes:
       - ./agent:/agent
+    ports:
+      - 10000:10000
