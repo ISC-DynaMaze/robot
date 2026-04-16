@@ -1,8 +1,18 @@
 FROM dtcooper/raspberrypi-os:python3.9
 
-RUN apt update
-RUN apt install -y ttf-wqy-zenhei python3-pip python3-smbus python3-serial
+RUN apt update && \
+    apt install -y --no-recommends \
+        ttf-wqy-zenhei \
+        python3-pip \
+        python3-smbus \
+        python3-serial \
+        libcap-dev \
+        python3-picamera2 \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir RPi.GPIO spidev rpi_ws281x spade==3.3.3
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ./agent ./agent
 
 CMD ["python", "-m", "agent"]
