@@ -1,10 +1,13 @@
-import asyncio
-import logging
+from __future__ import annotations
+
 import datetime
+import logging
+
+from picamera2 import Picamera2
 from spade.agent import Agent
 from spade.behaviour import PeriodicBehaviour
-from .AlphaBot2 import AlphaBot2
 
+from .AlphaBot2 import AlphaBot2
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -19,8 +22,11 @@ for log_name in ["spade", "aioxmpp", "xmpp"]:
 
 class RobotAgent(Agent):
     bot: AlphaBot2
-    
+    cam: Picamera2
+
     class IRSensorReader(PeriodicBehaviour):
+        agent: RobotAgent
+
         async def on_start(self):
             self.bot: AlphaBot2 = self.agent.bot
 
@@ -45,7 +51,19 @@ class RobotAgent(Agent):
 
     async def setup(self):
         self.bot = AlphaBot2()
+        cam = Picamera2()
+
+        config = cam.create_preview_configuration(
+            main={"format": "RGB888", "size": (2592, 1944)}
+        )
+        cam.configure(config)
+        cam.start()
+
         start_at = datetime.datetime.now() + datetime.timedelta(seconds=5)
         sensor_behavior = self.IRSensorReader(period=1, start_at=start_at)
-        
+
         self.add_behaviour(sensor_behavior)
+
+    async def stop(self) -> None:
+        self.cam.stop()
+        return await super().stop()
