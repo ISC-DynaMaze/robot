@@ -1,7 +1,7 @@
 FROM dtcooper/raspberrypi-os:python3.9
 
 RUN apt update && \
-    apt install -y --no-recommends \
+    apt install -y --no-install-recommends \
         ttf-wqy-zenhei \
         python3-pip \
         python3-smbus \
