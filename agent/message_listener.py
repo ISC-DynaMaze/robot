@@ -34,3 +34,6 @@ class MessageListenerBehaviour(CyclicBehaviour):
 
         if msg_type == "pan-tilt-test":
             self.agent.add_behaviour(CameraPanTiltBehaviour())
+        
+        elif msg_type == "stop":
+            await self.agent.stop()
