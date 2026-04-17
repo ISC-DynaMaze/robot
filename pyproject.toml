@@ -8,5 +8,6 @@ dependencies = [
     "aiofiles>=25.1.0",
     "picamera2>=0.3.34",
     "spade>=3.3.3",
-    "slixmpp<=1.9.1"
+    "slixmpp<=1.9.1",
+    "smbus>=1.1.post2",
 ]
