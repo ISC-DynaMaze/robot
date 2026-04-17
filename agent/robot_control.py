@@ -6,6 +6,7 @@ from picamera2 import Picamera2
 from spade.agent import Agent
 
 from agent.camera import CameraBehaviour
+from agent.message_listener import MessageListenerBehaviour
 
 from .AlphaBot2 import AlphaBot2
 
@@ -45,7 +46,9 @@ class RobotAgent(Agent):
         self.cam.configure(config)
         self.cam.start()
 
+        listener_behaviour = MessageListenerBehaviour()
         self.add_behaviour(CameraBehaviour(self.logger_jid))
+        self.add_behaviour(listener_behaviour)
 
     async def stop(self) -> None:
         self.cam.stop()
