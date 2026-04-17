@@ -39,16 +39,20 @@ class CameraBehaviour(OneShotBehaviour):
 class CameraPanTiltBehaviour(OneShotBehaviour):
     agent: RobotAgent
 
+    MIN_ANGLE = 600
+    MAX_ANGLE = 2600
+
     async def run(self):
         pwm = PCA9685(0x40, debug=True)
         pwm.setPWMFreq(50)
+        step = 10
         while True:
             # setServoPulse(2,2500)
-            for i in range(500, 2500, 10):
+            for i in range(self.MIN_ANGLE, self.MAX_ANGLE, step):
                 pwm.setServoPulse(0, i)
                 await asyncio.sleep(0.02)
-
-            for i in range(2500, 500, -10):
+            
+            for i in range(self.MAX_ANGLE, self.MIN_ANGLE, -step):
                 pwm.setServoPulse(0, i)
                 await asyncio.sleep(0.02)
             break
