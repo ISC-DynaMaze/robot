@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 from typing import TYPE_CHECKING
 
 import aiofiles
 from spade.behaviour import Message, OneShotBehaviour
+
+from agent.PCA9685 import PCA9685
 
 if TYPE_CHECKING:
     from robot_control import RobotAgent
@@ -31,3 +34,21 @@ class CameraBehaviour(OneShotBehaviour):
             metadata={"performative": "inform"},
         )
         await self.send(msg)
+
+
+class CameraPanTiltBehaviour(OneShotBehaviour):
+    agent: RobotAgent
+
+    async def run(self):
+        pwm = PCA9685(0x40, debug=True)
+        pwm.setPWMFreq(50)
+        while True:
+            # setServoPulse(2,2500)
+            for i in range(500, 2500, 10):
+                pwm.setServoPulse(0, i)
+                await asyncio.sleep(0.02)
+
+            for i in range(2500, 500, -10):
+                pwm.setServoPulse(0, i)
+                await asyncio.sleep(0.02)
+            break
