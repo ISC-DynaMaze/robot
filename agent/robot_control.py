@@ -26,13 +26,13 @@ class RobotAgent(Agent):
 
     async def setup(self):
         self.bot = AlphaBot2()
-        cam = Picamera2()
+        self.cam = Picamera2()
 
-        config = cam.create_preview_configuration(
+        config = self.cam.create_preview_configuration(
             main={"format": "RGB888", "size": (2592, 1944)}
         )
-        cam.configure(config)
-        cam.start()
+        self.cam.configure(config)
+        self.cam.start()
 
         self.add_behaviour(CameraBehaviour("logger@isc-coordinator.lan"))
 
