@@ -13,11 +13,9 @@ services:
     cap_add:
       - SYS_RAWIO
     environment:
-      XMPP_SERVER: "prosody"
-      XMPP_PORT: 5222
-      XMPP_DOMAIN: "isc-coordinator.lan"
-      XMPP_USERNAME: "alberto-robot"
+      XMPP_JID: "alberto-robot@isc-coordinator.lan"
       XMPP_PASSWORD: "top_secret"
+      LOGGER_JID: "logger@isc-coordinator.lan"
       PYTHONUNBUFFERED: 1
     volumes:
       - /run/udev:/run/udev:ro

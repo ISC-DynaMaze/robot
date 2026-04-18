@@ -24,17 +24,28 @@ class RobotAgent(Agent):
     bot: AlphaBot2
     cam: Picamera2
 
+    def __init__(
+        self,
+        *args,
+        logger_jid: str = "logger@isc-coordinator.lan",
+        camera_res: tuple[int, int] = (720, 540),
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.logger_jid: str = logger_jid
+        self.camera_res: tuple[int, int] = camera_res
+
     async def setup(self):
         self.bot = AlphaBot2()
         self.cam = Picamera2()
 
         config = self.cam.create_preview_configuration(
-            main={"format": "RGB888", "size": (2592, 1944)}
+            main={"format": "RGB888", "size": self.camera_res}
         )
         self.cam.configure(config)
         self.cam.start()
 
-        self.add_behaviour(CameraBehaviour("logger@isc-coordinator.lan"))
+        self.add_behaviour(CameraBehaviour(self.logger_jid))
 
     async def stop(self) -> None:
         self.cam.stop()

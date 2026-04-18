@@ -1,6 +1,6 @@
+import asyncio
 import logging
 import os
-import asyncio
 
 from agent.robot_control import RobotAgent
 
@@ -14,28 +14,30 @@ for log_name in ["spade", "aioxmpp", "xmpp"]:
     log.setLevel(logging.DEBUG)
     log.propagate = True
 
+
 async def main():
-    xmpp_domain = os.environ.get("XMPP_DOMAIN", "prosody")
-    xmpp_username = os.environ.get("XMPP_USERNAME", "alpha-pi-zero-agent")
-    xmpp_jid = f"{xmpp_username}@{xmpp_domain}"
+    xmpp_jid = os.environ.get("XMPP_JID", "alberto-robot@isc-coordinator.lan")
     xmpp_password = os.environ.get("XMPP_PASSWORD", "top_secret")
-    
+
+    logger_jid = os.environ.get("LOGGER_JID", "logger@isc-coordinator.lan")
+
     logger.info("Starting AlphaBot XMPP Agent")
     logger.info(f"XMPP JID: {xmpp_jid}")
     logger.info(f"XMPP Password: {'*' * len(xmpp_password)}")
-    
+
     try:
         agent = RobotAgent(
-            jid=xmpp_jid, 
+            logger_jid=logger_jid,
+            jid=xmpp_jid,
             password=xmpp_password,
-            verify_security=False
+            verify_security=False,
         )
-        
+
         logger.info("Agent created, attempting to start...")
         await agent.start(auto_register=True)
         logger.info("Agent started successfully!")
         agent.web.start(hostname="0.0.0.0", port=10000)
-        
+
         try:
             while agent.is_alive():
                 logger.debug("Agent is alive and running...")
