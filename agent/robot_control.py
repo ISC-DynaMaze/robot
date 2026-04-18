@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import datetime
 import logging
 
 from picamera2 import Picamera2
 from spade.agent import Agent
-from spade.behaviour import PeriodicBehaviour
+
+from agent.camera import CameraBehaviour
 
 from .AlphaBot2 import AlphaBot2
 
@@ -24,31 +24,6 @@ class RobotAgent(Agent):
     bot: AlphaBot2
     cam: Picamera2
 
-    class IRSensorReader(PeriodicBehaviour):
-        agent: RobotAgent
-
-        async def on_start(self):
-            self.bot: AlphaBot2 = self.agent.bot
-
-        async def run(self):
-            logger.debug("[Behaviour] Reading IR sensor")
-            right: bool = self.bot.getIRSensorRight()
-            left: bool = self.bot.getIRSensorLeft()
-            logger.info(f"[Behaviour] RIR {right=} {left=}")
-
-            if right and left:
-                logger.debug("[Agent] Stopping")
-                self.bot.stop()
-            elif not right and left:
-                logger.debug("[Agent] Turning left")
-                self.bot.left()
-            elif right and not left:
-                logger.debug("[Agent] Turning right")
-                self.bot.right()
-            elif not right and not left:
-                logger.debug("[Agent] Moving forward")
-                self.bot.forward()
-
     async def setup(self):
         self.bot = AlphaBot2()
         cam = Picamera2()
@@ -59,10 +34,7 @@ class RobotAgent(Agent):
         cam.configure(config)
         cam.start()
 
-        start_at = datetime.datetime.now() + datetime.timedelta(seconds=5)
-        sensor_behavior = self.IRSensorReader(period=1, start_at=start_at)
-
-        self.add_behaviour(sensor_behavior)
+        self.add_behaviour(CameraBehaviour("logger@isc-coordinator.lan"))
 
     async def stop(self) -> None:
         self.cam.stop()
