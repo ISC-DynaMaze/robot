@@ -70,7 +70,7 @@ class AlphaBot2(object):
 		GPIO.output(self.BIN2,GPIO.LOW)
 	
 
-	def setPWM(self, value):
+	def setBothPWM(self, value):
 		self.setPWMA(value)
 		self.setPWMB(value)
 		
