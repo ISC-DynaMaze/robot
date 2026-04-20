@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  agent:
+    build: .
+    container_name: agent
+    devices:
+      - /dev/gpiomem:/dev/gpiomem
+    privileged: true
+    cap_add:
+      - SYS_RAWIO
+    environment:
+      XMPP_SERVER: "prosody"
+      XMPP_PORT: 5222
+      XMPP_DOMAIN: "isc-coordinator.lan"
+      XMPP_USERNAME: "alpha-pi-zero-agent"
+      XMPP_PASSWORD: "top_secret"
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./agent:/agent
+    ports:
+      - 10000:10000
