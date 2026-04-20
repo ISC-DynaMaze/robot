@@ -22,16 +22,6 @@ class MessageListenerBehaviour(CyclicBehaviour):
 
         msg_type: str = data.get("type")
 
-        # if msg_type == "bot-img":
-        #    img_data = base64.b64decode(data["img"])
-        #    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        #    filename = f"photo_{timestamp}.jpg"
-        #    filepath = self.save_dir / filename
-
-        #    # Save the received image
-        #    async with aiofiles.open(filepath, "wb") as img_file:
-        #        await img_file.write(img_data)
-
         if msg_type == "pan-tilt-test":
             self.agent.add_behaviour(CameraPanTiltBehaviour())
         
