@@ -83,6 +83,7 @@ class RobotAgent(Agent):
             self.bot.left()
             await asyncio.sleep(self.time)
             self.bot.stop()
+            await asyncio.sleep(2)
             self.actual_angle = await self.ask_angle()
             angle_history.append(self.actual_angle)
             delta = abs(angle_history[-1]-angle_history[-2])
