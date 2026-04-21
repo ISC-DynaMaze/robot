@@ -73,7 +73,6 @@ class RobotAgent(Agent):
 
         async def on_start(self):
             self.bot: AlphaBot2 = self.agent.bot
-            #logger.info(f"[Behaviour] Starting calibration to target angle: {self.target_angle}")
 
         async def run(self):
             self.actual_angle = await self.ask_angle()
@@ -117,10 +116,12 @@ class RobotAgent(Agent):
                 angle_history.append(self.actual_angle)
                 a_1 = angle_history[-2]
                 a_2 = angle_history[-1]
-                v_1 = (np.cos(np.radians(a_1)),np.sin(np.radians(a_2)))
-                v_2 = (np.cos(np.radians(a_2)),np.sin(np.radians(a_2)))
-                delta = np.acos(abs(np.dot(v_1,v_2))/(np.linalg.norm(v_1)*np.linalg.norm(v_2)))
-                self.time = delta*self.time/self.target_angle
+                v_1 = np.array([np.cos(np.radians(a_1)),np.sin(np.radians(a_1))])
+                v_2 = np.array([np.cos(np.radians(a_2)),np.sin(np.radians(a_2))])
+                dot_product = np.clip(np.dot(v_1,v_2), -1.0, 1.0)
+                delta = np.rad2deg(np.acos(abs(dot_product)/(np.linalg.norm(v_1)*np.linalg.norm(v_2))))
+                print(delta)
+                self.time = self.target_angle*self.time/delta
                 
     async def setup(self):
         self.bot = AlphaBot2()
