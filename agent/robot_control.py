@@ -5,6 +5,7 @@ import datetime
 import json
 import base64
 import time
+import numpy as np
 from math import pi as PI
 from spade.agent import Agent
 from spade.behaviour import PeriodicBehaviour, OneShotBehaviour
@@ -69,6 +70,7 @@ class RobotAgent(Agent):
             self.speed = speed
             self.time = time
             self.margin = margin
+
         async def on_start(self):
             self.bot: AlphaBot2 = self.agent.bot
             #logger.info(f"[Behaviour] Starting calibration to target angle: {self.target_angle}")
@@ -80,21 +82,9 @@ class RobotAgent(Agent):
                 return
             self.bot.setBothPWM(self.speed)
             angle_history = [self.actual_angle]
-            self.bot.left()
-            await asyncio.sleep(self.time)
-            self.bot.stop()
-            await asyncio.sleep(2)
-            self.actual_angle = await self.ask_angle()
-            angle_history.append(self.actual_angle)
-            delta = abs(angle_history[-1]-angle_history[-2])
-            self.time = delta*self.time/self.target_angle
+            self.calibration_sequence(angle_history)
             for i in range(10):
-                self.bot.left()
-                await asyncio.sleep(self.time)
-                self.bot.stop()
-                self.actual_angle = await self.ask_angle()
-                angle_history.append(self.actual_angle)
-                    
+                self.calibration_sequence(angle_history)
         async def ask_angle(self):
             logger.debug("[Behaviour] Ask controller for actual angle")
 
@@ -115,8 +105,26 @@ class RobotAgent(Agent):
             else:
                 logger.debug("[Behaviour] No response from controller")
 
+        async def calibration_sequence(self, angle_history):
+                self.bot.left()
+                logger.log("[Behaviour] Robot turn left")
+                await asyncio.sleep(self.time)
+                self.bot.stop()
+                logger.log("[Behaviour] Robot Stop")
+                await asyncio.sleep(2)
+                self.actual_angle = await self.ask_angle()
+                angle_history.append(self.actual_angle)
+                a_1 = angle_history[-2]
+                a_2 = angle_history[-1]
+                v_1 = (np.cos(np.radians(a_1)),np.sin(np.radians(a_2)))
+                v_2 = (np.cos(np.radians(a_2)),np.sin(np.radians(a_2)))
+                delta = np.acos(abs(np.dot(v_1,v_2))/(np.linalg.norm(v_1)*np.linalg.norm(v_2)))
+                self.time = delta*self.time/self.target_angle
+                
+
+
     async def setup(self):
         self.bot = AlphaBot2()
-        calibration_behavior = self.TargetAngleCalibrationBehaviour(90.0, 3.0)
+        calibration_behavior = self.TargetAngleCalibrationBehaviour(90.0, 0.5)
         
         self.add_behaviour(calibration_behavior)
