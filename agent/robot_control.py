@@ -80,7 +80,7 @@ class RobotAgent(Agent):
                 logger.info(f"[Behaviour] No angle given")
                 return
             self.bot.setBothPWM(self.speed)
-            angle_history = [self.actual_angle]
+            angle_history = [[self.actual_angle,0.0]]
             await self.calibration_sequence(angle_history)
             for i in range(10):
                 await self.calibration_sequence(angle_history)
@@ -113,7 +113,8 @@ class RobotAgent(Agent):
                 logger.info("[Behaviour] Robot Stop")
                 await asyncio.sleep(2)
                 self.actual_angle = await self.ask_angle()
-                angle_history.append(self.actual_angle)
+                angle_history.append([self.actual_angle,self.time])
+                '''
                 a_1 = angle_history[-2]
                 a_2 = angle_history[-1]
                 v_1 = np.array([np.cos(np.radians(a_1)),np.sin(np.radians(a_1))])
@@ -122,9 +123,12 @@ class RobotAgent(Agent):
                 delta = np.rad2deg(np.acos(abs(dot_product)/(np.linalg.norm(v_1)*np.linalg.norm(v_2))))
                 print(delta)
                 self.time = self.target_angle*self.time/delta
+                print(self.time)
+                '''
+                self.time+=0.1
                 
     async def setup(self):
         self.bot = AlphaBot2()
-        calibration_behavior = self.TargetAngleCalibrationBehaviour(90.0, 0.5)
+        calibration_behavior = self.TargetAngleCalibrationBehaviour(90.0, 0.1)
         
         self.add_behaviour(calibration_behavior)
