@@ -1,4 +1,15 @@
 from __future__ import annotations
+import asyncio
+import logging
+import datetime
+import json
+import base64
+import time
+from math import pi as PI
+from spade.agent import Agent
+from spade.behaviour import PeriodicBehaviour, OneShotBehaviour
+from spade.message import Message
+from .AlphaBot2 import AlphaBot2
 
 import logging
 
@@ -50,3 +61,61 @@ class RobotAgent(Agent):
     async def stop(self) -> None:
         self.cam.stop()
         return await super().stop()
+    class TargetAngleCalibrationBehaviour(OneShotBehaviour):
+        def __init__(self, target_angle, time, speed=30, margin=5.0):
+            super().__init__()
+            self.actual_angle = None
+            self.target_angle = target_angle
+            self.speed = speed
+            self.time = time
+            self.margin = margin
+        async def on_start(self):
+            self.bot: AlphaBot2 = self.agent.bot
+            #logger.info(f"[Behaviour] Starting calibration to target angle: {self.target_angle}")
+
+        async def run(self):
+            self.actual_angle = await self.ask_angle()
+            if self.actual_angle is None:
+                logger.info(f"[Behaviour] No angle given")
+                return
+            self.bot.setPWM(self.speed)
+            angle_history = [self.actual_angle]
+            self.bot.left()
+            await asyncio.sleep(self.time)
+            self.bot.stop()
+            self.actual_angle = await self.ask_angle()
+            angle_history.append(self.actual_angle)
+            delta = abs(angle_history[-1]-angle_history[-2])
+            self.time = delta*self.time/self.target_angle
+            for i in range(10):
+                self.bot.left()
+                await asyncio.sleep(self.time)
+                self.bot.stop()
+                self.actual_angle = await self.ask_angle()
+                angle_history.append(self.actual_angle)
+                    
+        async def ask_angle(self):
+            logger.debug("[Behaviour] Ask controller for actual angle")
+
+            msg = Message(to="alberto-ctrl@isc-coordinator.lan")
+            msg.set_metadata("performative", "inform")
+            msg.set_metadata("ontology", "calibration")
+            msg.body = "actual_angle"
+            await self.send(msg)
+
+            reply = await self.receive(timeout=15.0)
+
+            if reply:
+                try:
+                    actual_angle = json.loads(reply.body)["angle"]
+                    return actual_angle
+                except:
+                    logger.debug("[Behaviour] Angle format is not correct")
+            else:
+                logger.debug("[Behaviour] No response from controller")
+
+    async def setup(self):
+        self.bot = AlphaBot2()
+        calibration_behavior = self.TargetAngleCalibrationBehaviour(90.0, 3.0)
+        
+        self.add_behaviour(calibration_behavior)
