@@ -18,7 +18,4 @@ services:
       LOGGER_JID: "logger@isc-coordinator.lan"
       PYTHONUNBUFFERED: 1
     volumes:
-      - /run/udev:/run/udev:ro
       - ./agent:/agent
-    ports:
-      - 10000:10000
