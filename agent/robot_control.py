@@ -82,9 +82,9 @@ class RobotAgent(Agent):
                 return
             self.bot.setBothPWM(self.speed)
             angle_history = [self.actual_angle]
-            self.calibration_sequence(angle_history)
+            await self.calibration_sequence(angle_history)
             for i in range(10):
-                self.calibration_sequence(angle_history)
+                await self.calibration_sequence(angle_history)
         async def ask_angle(self):
             logger.debug("[Behaviour] Ask controller for actual angle")
 
