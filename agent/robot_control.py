@@ -63,7 +63,7 @@ class RobotAgent(Agent):
         self.cam.stop()
         return await super().stop()
     class TargetAngleCalibrationBehaviour(OneShotBehaviour):
-        def __init__(self, target_angle, time, speed=30, margin=5.0):
+        def __init__(self, target_angle, time, speed=20, margin=5.0):
             super().__init__()
             self.actual_angle = None
             self.target_angle = target_angle
@@ -85,6 +85,7 @@ class RobotAgent(Agent):
             await self.calibration_sequence(angle_history)
             for i in range(10):
                 await self.calibration_sequence(angle_history)
+
         async def ask_angle(self):
             logger.debug("[Behaviour] Ask controller for actual angle")
 
@@ -121,8 +122,6 @@ class RobotAgent(Agent):
                 delta = np.acos(abs(np.dot(v_1,v_2))/(np.linalg.norm(v_1)*np.linalg.norm(v_2)))
                 self.time = delta*self.time/self.target_angle
                 
-
-
     async def setup(self):
         self.bot = AlphaBot2()
         calibration_behavior = self.TargetAngleCalibrationBehaviour(90.0, 0.5)
