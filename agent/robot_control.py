@@ -78,7 +78,7 @@ class RobotAgent(Agent):
             if self.actual_angle is None:
                 logger.info(f"[Behaviour] No angle given")
                 return
-            self.bot.setPWM(self.speed)
+            self.bot.setBothPWM(self.speed)
             angle_history = [self.actual_angle]
             self.bot.left()
             await asyncio.sleep(self.time)
