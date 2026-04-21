@@ -1,10 +1,13 @@
-import asyncio
-import logging
-import datetime
-from spade.agent import Agent
-from spade.behaviour import PeriodicBehaviour
-from .AlphaBot2 import AlphaBot2
+from __future__ import annotations
 
+import logging
+
+from picamera2 import Picamera2
+from spade.agent import Agent
+
+from agent.camera import CameraBehaviour
+
+from .AlphaBot2 import AlphaBot2
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -19,33 +22,31 @@ for log_name in ["spade", "aioxmpp", "xmpp"]:
 
 class RobotAgent(Agent):
     bot: AlphaBot2
-    
-    class IRSensorReader(PeriodicBehaviour):
-        async def on_start(self):
-            self.bot: AlphaBot2 = self.agent.bot
+    cam: Picamera2
 
-        async def run(self):
-            logger.debug("[Behaviour] Reading IR sensor")
-            right: bool = self.bot.getIRSensorRight()
-            left: bool = self.bot.getIRSensorLeft()
-            logger.info(f"[Behaviour] RIR {right=} {left=}")
-
-            if right and left:
-                logger.debug("[Agent] Stopping")
-                self.bot.stop()
-            elif not right and left:
-                logger.debug("[Agent] Turning left")
-                self.bot.left()
-            elif right and not left:
-                logger.debug("[Agent] Turning right")
-                self.bot.right()
-            elif not right and not left:
-                logger.debug("[Agent] Moving forward")
-                self.bot.forward()
+    def __init__(
+        self,
+        *args,
+        logger_jid: str = "logger@isc-coordinator.lan",
+        camera_res: tuple[int, int] = (720, 540),
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.logger_jid: str = logger_jid
+        self.camera_res: tuple[int, int] = camera_res
 
     async def setup(self):
         self.bot = AlphaBot2()
-        start_at = datetime.datetime.now() + datetime.timedelta(seconds=5)
-        sensor_behavior = self.IRSensorReader(period=1, start_at=start_at)
-        
-        self.add_behaviour(sensor_behavior)
+        self.cam = Picamera2()
+
+        config = self.cam.create_preview_configuration(
+            main={"format": "RGB888", "size": self.camera_res}
+        )
+        self.cam.configure(config)
+        self.cam.start()
+
+        self.add_behaviour(CameraBehaviour(self.logger_jid))
+
+    async def stop(self) -> None:
+        self.cam.stop()
+        return await super().stop()
