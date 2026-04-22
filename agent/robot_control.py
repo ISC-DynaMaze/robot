@@ -61,7 +61,7 @@ class RobotAgent(Agent):
         self.cam.stop()
         return await super().stop()
     class TargetAngleCalibrationBehaviour(OneShotBehaviour):
-        def __init__(self, time, speed=20, delta_t = 0.0):
+        def __init__(self, time, speed=20, delta_t = 0.1):
             super().__init__()
             self.actual_angle = None
             self.speed = speed
@@ -119,8 +119,8 @@ class RobotAgent(Agent):
                 logger.debug("[Behaviour] No response from controller")
 
         async def calibration_sequence(self, angle_history, delta_history):
+                logger.info(f"[Behaviour] Robot turn left for {self.time+self.delta_t} second(s)")
                 self.bot.left()
-                logger.info("[Behaviour] Robot turn left")
                 await asyncio.sleep(self.time+self.delta_t)
                 self.bot.stop()
                 await asyncio.sleep(1)
