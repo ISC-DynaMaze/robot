@@ -1,11 +1,10 @@
 from __future__ import annotations
 import asyncio
 import logging
-import datetime
 import json
-import base64
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 from math import pi as PI
 from spade.agent import Agent
 from spade.behaviour import PeriodicBehaviour, OneShotBehaviour
@@ -63,12 +62,12 @@ class RobotAgent(Agent):
         self.cam.stop()
         return await super().stop()
     class TargetAngleCalibrationBehaviour(OneShotBehaviour):
-        def __init__(self, time, speed=20, margin=5.0):
+        def __init__(self, time, speed=20, delta_t = 0.0):
             super().__init__()
             self.actual_angle = None
             self.speed = speed
             self.time = time
-            self.margin = margin
+            self.delta_t = delta_t
 
         async def on_start(self):
             self.bot: AlphaBot2 = self.agent.bot
@@ -81,10 +80,23 @@ class RobotAgent(Agent):
             self.bot.setBothPWM(self.speed)
             angle_history = [self.actual_angle]
             delta_history = []
-            await self.calibration_sequence(angle_history,delta_history)
-            for i in range(10):
-                await self.calibration_sequence(angle_history,delta_history)
-            print(delta_history)
+            await self.calibration_sequence(angle_history,delta_history, self.delta_t)
+            for i in range(9):
+                await self.calibration_sequence(angle_history,delta_history, self.delta_t)
+            test = interpolate(delta_history)
+
+            test_angle_history = []
+            test_delta_history =[]
+            for t in test :
+                self.actual_angle = await self.ask_angle()
+                test_angle_history.append(self.actual_angle)
+                self.bot.left()
+                asyncio.time(t)
+                self.actual_angle = await self.ask_angle()
+                test_angle_history.append(self.actual_angle)
+                test_delta_history.append(((test_angle_history[-2]-test_angle_history[-1]+180)%360)-180)
+            print(test_delta_history)
+                
 
 
         async def ask_angle(self):
@@ -107,16 +119,25 @@ class RobotAgent(Agent):
             else:
                 logger.debug("[Behaviour] No response from controller")
 
-        async def calibration_sequence(self, angle_history, delta_history, delta_time = 0.0):
+        async def calibration_sequence(self, angle_history, delta_history, delta_time):
                 self.bot.left()
                 logger.info("[Behaviour] Robot turn left")
                 await asyncio.sleep(time+delta_time)
                 self.bot.stop()
+                await asyncio.sleep(1)
                 logger.info("[Behaviour] Robot Stop")
                 self.actual_angle = await self.ask_angle()
                 angle_history.append(self.actual_angle)
                 delta = abs(((angle_history[-2]-angle_history[-1]+180)%360)-180)
                 delta_history.append([delta,self.time])
+
+        def interpolate(self, delta_history):
+            x = []
+            y = []
+            for c in delta_history:
+                x.append(c[1])
+                y.append(c[0])
+            return np.interp([45,90,135],x,y)
                 
     async def setup(self):
         self.bot = AlphaBot2()
