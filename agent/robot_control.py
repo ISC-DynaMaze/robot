@@ -4,7 +4,6 @@ import logging
 import json
 import time
 import numpy as np
-import matplotlib.pyplot as plt
 from math import pi as PI
 from spade.agent import Agent
 from spade.behaviour import PeriodicBehaviour, OneShotBehaviour
@@ -80,7 +79,7 @@ class RobotAgent(Agent):
             self.bot.setBothPWM(self.speed)
             angle_history = [self.actual_angle]
             delta_history = []
-            await self.calibration_sequence(angle_history,delta_history, self.delta_t)
+            await self.calibration_sequence(angle_history,delta_history)
             for i in range(9):
                 await self.calibration_sequence(angle_history,delta_history)
             test = self.interpolate(delta_history)
