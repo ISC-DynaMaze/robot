@@ -82,7 +82,7 @@ class RobotAgent(Agent):
             delta_history = []
             await self.calibration_sequence(angle_history,delta_history, self.delta_t)
             for i in range(9):
-                await self.calibration_sequence(angle_history,delta_history, self.delta_t)
+                await self.calibration_sequence(angle_history,delta_history)
             test = self.interpolate(delta_history)
 
             test_angle_history = []
@@ -119,10 +119,10 @@ class RobotAgent(Agent):
             else:
                 logger.debug("[Behaviour] No response from controller")
 
-        async def calibration_sequence(self, angle_history, delta_history, delta_time):
+        async def calibration_sequence(self, angle_history, delta_history):
                 self.bot.left()
                 logger.info("[Behaviour] Robot turn left")
-                await asyncio.sleep(time+delta_time)
+                await asyncio.sleep(self.time+self.delta_time)
                 self.bot.stop()
                 await asyncio.sleep(1)
                 logger.info("[Behaviour] Robot Stop")
