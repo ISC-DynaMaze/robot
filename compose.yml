@@ -18,4 +18,4 @@ services:
       LOGGER_JID: "logger@isc-coordinator.lan"
       PYTHONUNBUFFERED: 1
     volumes:
-      - ./agent:/agent
+      - ./:/app
