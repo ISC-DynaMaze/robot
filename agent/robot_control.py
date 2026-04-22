@@ -61,6 +61,7 @@ class RobotAgent(Agent):
     async def stop(self) -> None:
         self.cam.stop()
         return await super().stop()
+    
     class AngleCalibrationBehaviour(OneShotBehaviour):
         def __init__(self, time, speed=20, delta_t = 0.05, calib_threshold = 60):
             super().__init__()
@@ -198,7 +199,6 @@ class RobotAgent(Agent):
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = save_path / f"debug_{timestamp}.json"
             
-            # Correction de l'ouverture de fichier
             try:
                 with open(filename, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=4)
