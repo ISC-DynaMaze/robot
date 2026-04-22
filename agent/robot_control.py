@@ -61,7 +61,7 @@ class RobotAgent(Agent):
         self.cam.stop()
         return await super().stop()
     class TargetAngleCalibrationBehaviour(OneShotBehaviour):
-        def __init__(self, time, speed=20, delta_t = 0.1):
+        def __init__(self, time, speed=20, delta_t = 0.05):
             super().__init__()
             self.actual_angle = None
             self.speed = speed
@@ -80,9 +80,12 @@ class RobotAgent(Agent):
             angle_history = [self.actual_angle]
             delta_history = []
             await self.calibration_sequence(angle_history,delta_history)
-            for i in range(9):
-                await self.calibration_sequence(angle_history,delta_history)
+            for i in range(7):
+                await self.calibration_sequence(angle_history, delta_history, self.delta_t)
+            logger.info(f"[Calibration result] : {delta_history}")
             test = self.interpolate(delta_history)
+
+            logger.info(f"[Interpolate] : {test}")
 
             test_angle_history = []
             test_delta_history =[]
@@ -90,13 +93,13 @@ class RobotAgent(Agent):
                 self.actual_angle = await self.ask_angle()
                 test_angle_history.append(self.actual_angle)
                 self.bot.left()
-                asyncio.time(t)
+                asyncio.sleep(t)
+                self.bot.stop()
                 self.actual_angle = await self.ask_angle()
                 test_angle_history.append(self.actual_angle)
                 test_delta_history.append(((test_angle_history[-2]-test_angle_history[-1]+180)%360)-180)
+            self.bot.stop()
             print(test_delta_history)
-                
-
 
         async def ask_angle(self):
             logger.debug("[Behaviour] Ask controller for actual angle")
@@ -118,10 +121,13 @@ class RobotAgent(Agent):
             else:
                 logger.debug("[Behaviour] No response from controller")
 
-        async def calibration_sequence(self, angle_history, delta_history):
-                logger.info(f"[Behaviour] Robot turn left for {self.time+self.delta_t} second(s)")
+        async def calibration_sequence(self, angle_history, delta_history, delta_t = 0.0):
+                logger.info(f"[Time] Time : {self.time}")
+                logger.info(f"[Time] Additional time : {delta_t}")
+                logger.info(f"[Behaviour] Robot turn left for {self.time+delta_t} second(s)")
                 self.bot.left()
-                await asyncio.sleep(self.time+self.delta_t)
+                await asyncio.sleep(self.time+delta_t)
+                self.time += delta_t
                 self.bot.stop()
                 await asyncio.sleep(1)
                 logger.info("[Behaviour] Robot Stop")
@@ -136,10 +142,12 @@ class RobotAgent(Agent):
             for c in delta_history:
                 x.append(c[1])
                 y.append(c[0])
+            print(x)
+            print(y)
             return np.interp([45,90,135],x,y)
                 
     async def setup(self):
         self.bot = AlphaBot2()
-        calibration_behavior = self.TargetAngleCalibrationBehaviour(90.0, 0.1)
+        calibration_behavior = self.TargetAngleCalibrationBehaviour(0.1)
         
         self.add_behaviour(calibration_behavior)
