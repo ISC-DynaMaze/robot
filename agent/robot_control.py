@@ -83,7 +83,7 @@ class RobotAgent(Agent):
             await self.calibration_sequence(angle_history,delta_history, self.delta_t)
             for i in range(9):
                 await self.calibration_sequence(angle_history,delta_history, self.delta_t)
-            test = interpolate(delta_history)
+            test = self.interpolate(delta_history)
 
             test_angle_history = []
             test_delta_history =[]
