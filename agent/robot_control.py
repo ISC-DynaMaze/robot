@@ -61,34 +61,41 @@ class RobotAgent(Agent):
     async def stop(self) -> None:
         self.cam.stop()
         return await super().stop()
-    class TargetAngleCalibrationBehaviour(OneShotBehaviour):
-        def __init__(self, time, speed=20, delta_t = 0.05):
+    class AngleCalibrationBehaviour(OneShotBehaviour):
+        def __init__(self, time, speed=20, delta_t = 0.05, calib_threshold = 60):
             super().__init__()
             self.actual_angle = None
             self.speed = speed
             self.time = time
             self.delta_t = delta_t
+            self.calib_threshold = calib_threshold
 
         async def on_start(self):
             self.bot: AlphaBot2 = self.agent.bot
 
         async def run(self):
-            self.actual_angle = await self.ask_angle()
-            if self.actual_angle is None:
-                logger.info(f"[Behaviour] No angle given")
-                return
-            self.bot.setBothPWM(self.speed)
-            angle_history = [self.actual_angle]
-            delta_history = []
-            await self.calibration_sequence(angle_history,delta_history)
-            for i in range(7):
-                await self.calibration_sequence(angle_history, delta_history, self.delta_t)
-            logger.info(f"[Calibration result] : {delta_history}")
-            test = self.interpolate(delta_history)
+            run_calib = True
+            latest_data = self.load_latest_data()
+            print(latest_data)
 
-            logger.info(f"[Interpolate] : {test}")
-            self.test_sequence(test)
-            self.save_result()
+            if latest_data:
+
+                self.actual_angle = await self.ask_angle()
+                if self.actual_angle is None:
+                    logger.info(f"[Behaviour] No angle given")
+                    return
+                self.bot.setBothPWM(self.speed)
+                angle_history = [self.actual_angle]
+                delta_history = []
+                await self.calibration_sequence(angle_history,delta_history)
+                for i in range(7):
+                    await self.calibration_sequence(angle_history, delta_history, self.delta_t)
+                logger.info(f"[Calibration result] : {delta_history}")
+                test = self.interpolate(delta_history)
+
+                logger.info(f"[Interpolate] : {test}")
+                result_test = await self.test_sequence(test)
+                self.save_result(delta_history, result_test)
 
         async def ask_angle(self):
             logger.debug("[Behaviour] Ask controller for actual angle")
@@ -138,32 +145,65 @@ class RobotAgent(Agent):
         async def test_sequence(self, test):
             test_angle_history = []
             test_delta_history = []
-            for t in test :
-                self.actual_angle = await self.ask_angle()
-                test_angle_history.append(self.actual_angle)
+            targets = [45, 90, 135] # Pour référence
+            
+            for i, t in enumerate(test):
+                start_angle = await self.ask_angle()
+                test_angle_history.append(start_angle)
+                
                 self.bot.left()
                 await asyncio.sleep(t)
                 self.bot.stop()
-                self.actual_angle = await self.ask_angle()
-                test_angle_history.append(self.actual_angle)
-                test_delta_history.append(((test_angle_history[-2]-test_angle_history[-1]+180)%360)-180)
+                
+                await asyncio.sleep(1.5) # Indispensable pour la stabilisation caméra
+                end_angle = await self.ask_angle()
+                test_angle_history.append(end_angle)
+                
+                delta = abs(((start_angle - end_angle + 180) % 360) - 180)
+                
+                # On stocke des dicts pour avoir un JSON propre
+                test_delta_history.append({
+                    "target": targets[i],
+                    "time": float(t),
+                    "obtained": float(delta)
+                })
+                
             self.bot.stop()
             return test_delta_history
         
         def save_result(self, delta_history,test_delta_history):
-            data = dict()
-            data["speed"] = self.speed
-            data["measure"] = {a : t for a,t in delta_history}
-            data["test"] = {a : t for a,t in test_delta_history}
-            
+            data = {
+            "speed": self.speed,
+            "measures": [{"angle": float(d[0]), "time": float(d[1])} for d in delta_history],
+            "tests": test_delta_history
+            }
+
             save_path = Path("test_result")
             save_path.mkdir(parents=True, exist_ok=True)
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            filename = str(save_path / f"debug_{timestamp}.json")
-            json.dump(data,filename)
-                
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = save_path / f"debug_{timestamp}.json"
+            
+            # Correction de l'ouverture de fichier
+            try:
+                with open(filename, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=4)
+                logger.info(f"Résultats sauvegardés avec succès dans {filename}")
+            except Exception as e:
+                logger.error(f"Erreur sauvegarde JSON : {e}")
+        
+        def load_latest_data(self):
+            files = list(Path("test_result").glob("debug_*.json"))
+            if not files: 
+                return False
+            
+            latest_file = sorted(files)[-1]
+
+            parts = latest_file.stem.split("_")
+            date_str = f"{parts[1]}_{parts[2]}"
+            file_time = datetime.datetime.strptime(date_str, "%Y%m%d_%H%M%S")
+            return latest_file, file_time
     async def setup(self):
         self.bot = AlphaBot2()
-        calibration_behavior = self.TargetAngleCalibrationBehaviour(0.1)
+        calibration_behavior = self.AngleCalibrationBehaviour(0.1)
         
         self.add_behaviour(calibration_behavior)
