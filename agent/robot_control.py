@@ -2,8 +2,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import json
-import time
 import numpy as np
+from pathlib import Path
+import datetime
 from math import pi as PI
 from spade.agent import Agent
 from spade.behaviour import PeriodicBehaviour, OneShotBehaviour
@@ -86,20 +87,8 @@ class RobotAgent(Agent):
             test = self.interpolate(delta_history)
 
             logger.info(f"[Interpolate] : {test}")
-
-            test_angle_history = []
-            test_delta_history =[]
-            for t in test :
-                self.actual_angle = await self.ask_angle()
-                test_angle_history.append(self.actual_angle)
-                self.bot.left()
-                asyncio.sleep(t)
-                self.bot.stop()
-                self.actual_angle = await self.ask_angle()
-                test_angle_history.append(self.actual_angle)
-                test_delta_history.append(((test_angle_history[-2]-test_angle_history[-1]+180)%360)-180)
-            self.bot.stop()
-            print(test_delta_history)
+            self.test_sequence(test)
+            self.save_result()
 
         async def ask_angle(self):
             logger.debug("[Behaviour] Ask controller for actual angle")
@@ -140,11 +129,38 @@ class RobotAgent(Agent):
             x = []
             y = []
             for c in delta_history:
-                x.append(c[1])
-                y.append(c[0])
+                x.append(c[0])
+                y.append(c[1])
             print(x)
             print(y)
             return np.interp([45,90,135],x,y)
+        
+        async def test_sequence(self, test):
+            test_angle_history = []
+            test_delta_history = []
+            for t in test :
+                self.actual_angle = await self.ask_angle()
+                test_angle_history.append(self.actual_angle)
+                self.bot.left()
+                await asyncio.sleep(t)
+                self.bot.stop()
+                self.actual_angle = await self.ask_angle()
+                test_angle_history.append(self.actual_angle)
+                test_delta_history.append(((test_angle_history[-2]-test_angle_history[-1]+180)%360)-180)
+            self.bot.stop()
+            return test_delta_history
+        
+        def save_result(self, delta_history,test_delta_history):
+            data = dict()
+            data["speed"] = self.speed
+            data["measure"] = {a : t for a,t in delta_history}
+            data["test"] = {a : t for a,t in test_delta_history}
+            
+            save_path = Path("test_result")
+            save_path.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            filename = str(save_path / f"debug_{timestamp}.json")
+            json.dump(data,filename)
                 
     async def setup(self):
         self.bot = AlphaBot2()
