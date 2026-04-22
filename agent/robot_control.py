@@ -121,7 +121,7 @@ class RobotAgent(Agent):
         async def calibration_sequence(self, angle_history, delta_history):
                 self.bot.left()
                 logger.info("[Behaviour] Robot turn left")
-                await asyncio.sleep(self.time+self.delta_time)
+                await asyncio.sleep(self.time+self.delta_t)
                 self.bot.stop()
                 await asyncio.sleep(1)
                 logger.info("[Behaviour] Robot Stop")
