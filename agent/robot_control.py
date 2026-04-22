@@ -74,12 +74,24 @@ class RobotAgent(Agent):
             self.bot: AlphaBot2 = self.agent.bot
 
         async def run(self):
-            run_calib = True
+            new_calibration = True
             latest_data = self.load_latest_data()
-            print(latest_data)
+            logger.info(f"[File date] : {latest_data}")
 
             if latest_data:
-
+                now = datetime.datetime.now()
+                interval = (now-latest_data[1]).total_seconds()
+                if interval > 3600:
+                    logger.info("[Behaviour] New calibration required")
+                    
+                else :
+                    logger.info("[Behaviour] No need of new calibration")
+                    new_calibration = False
+            else :
+                logger.info("[Behaviour] No cexisting calibration")
+                new_calibration = True
+            
+            if new_calibration:
                 self.actual_angle = await self.ask_angle()
                 if self.actual_angle is None:
                     logger.info(f"[Behaviour] No angle given")
@@ -96,6 +108,9 @@ class RobotAgent(Agent):
                 logger.info(f"[Interpolate] : {test}")
                 result_test = await self.test_sequence(test)
                 self.save_result(delta_history, result_test)
+            else :
+                self.load_profile(latest_data[0])
+
 
         async def ask_angle(self):
             logger.debug("[Behaviour] Ask controller for actual angle")
@@ -202,6 +217,19 @@ class RobotAgent(Agent):
             date_str = f"{parts[1]}_{parts[2]}"
             file_time = datetime.datetime.strptime(date_str, "%Y%m%d_%H%M%S")
             return latest_file, file_time
+
+        def load_profile(self, file_path):
+            try:
+                with open(file_path, "r") as f:
+                    data = json.load(f)
+                    self.delta_history = [[m["angle"], m["time"]] for m in data["measures"]]
+                    self.speed = data.get("speed", 20)
+                    logger.info(f"[Load] Existing config loaded ")
+                    return True
+            except Exception as e:
+                logger.error(f"[Load] Erreur : {e}")
+                return False
+        
     async def setup(self):
         self.bot = AlphaBot2()
         calibration_behavior = self.AngleCalibrationBehaviour(0.1)
