@@ -133,7 +133,7 @@ class RobotAgent(Agent):
             else:
                 logger.debug("[Behaviour] No response from controller")
 
-        async def calibration_sequence(self, angle_history, delta_history, delta_t = 0.0):
+        async def calibration_sequence(self, angle_history, delta_history, delta_t = 0.1):
                 logger.info(f"[Time] Time : {self.time}")
                 logger.info(f"[Time] Additional time : {delta_t}")
                 logger.info(f"[Behaviour] Robot turn left for {self.time+delta_t} second(s)")
@@ -171,13 +171,12 @@ class RobotAgent(Agent):
                 await asyncio.sleep(t)
                 self.bot.stop()
                 
-                await asyncio.sleep(1.5) # Indispensable pour la stabilisation caméra
+                await asyncio.sleep(1.5)
                 end_angle = await self.ask_angle()
                 test_angle_history.append(end_angle)
                 
                 delta = abs(((start_angle - end_angle + 180) % 360) - 180)
                 
-                # On stocke des dicts pour avoir un JSON propre
                 test_delta_history.append({
                     "target": targets[i],
                     "time": float(t),
@@ -202,9 +201,9 @@ class RobotAgent(Agent):
             try:
                 with open(filename, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=4)
-                logger.info(f"Résultats sauvegardés avec succès dans {filename}")
+                logger.info(f"Results saved in {filename}")
             except Exception as e:
-                logger.error(f"Erreur sauvegarde JSON : {e}")
+                logger.error(f"Error :  {e}")
         
         def load_latest_data(self):
             files = list(Path("test_result").glob("debug_*.json"))
