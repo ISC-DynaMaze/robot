@@ -89,7 +89,7 @@ class RobotAgent(Agent):
                     logger.info("[Behaviour] No need of new calibration")
                     new_calibration = False
             else :
-                logger.info("[Behaviour] No cexisting calibration")
+                logger.info("[Behaviour] No existing calibration")
                 new_calibration = True
             
             if new_calibration:
